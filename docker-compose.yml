@@ -1,0 +1,35 @@
+version: "3.4"
+
+services:
+  web:
+    image: httpd:latest
+    volumes:
+      - ./web/bin:/usr/local/apache2/htdocs 
+    ports:
+      - 80:80
+      
+  db:
+    image: neo4j
+    ports:
+      - 7474:7474 # http
+      - 7687:7687 # bolt
+    environment:
+      - NEO4J_AUTH=neo4j/secret
+
+  api:
+    build: api
+    healthcheck:
+      test: "exit 0"
+    command: sh -c "/wait && python app.py"
+    environment:
+      - NEO4J_AUTH=neo4j/secret
+      - WAIT_HOSTS=db:7687
+      - WAIT_HOSTS_TIMEOUT=300
+      - WAIT_SLEEP_INTERVAL=30
+      - WAIT_HOST_CONNECT_TIMEOUT=30
+    depends_on:
+      - db
+    links:
+      - "db:db"
+    ports:
+      - "81:5000"
